@@ -10,6 +10,7 @@ import {
     RectButton,
 } from 'react-native-gesture-handler';
 import BottomSheetNewApi from './new_api/bottom_sheet';
+import Random from "./exampe";
 
 interface Example {
     name: string;
@@ -91,6 +92,7 @@ interface MainScreenItemProps {
 
 function MainScreenItem({ name, onPressItem }: MainScreenItemProps) {
     return (
+        // <Random/>
         <RectButton style={[styles.button]} onPress={() => onPressItem(name)}>
             <Text>{name}</Text>
         </RectButton>

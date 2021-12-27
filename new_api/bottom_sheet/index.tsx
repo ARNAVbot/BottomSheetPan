@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Dimensions, StyleSheet, useWindowDimensions, View} from 'react-native';
 import {
     Gesture,
-    GestureDetector,
+    GestureDetector, PanGestureHandler,
     PanGestureHandlerEventPayload,
 } from 'react-native-gesture-handler';
 import Animated, {
@@ -32,6 +32,10 @@ function Example() {
     const translationY = useSharedValue(0);
     const scrollOffset = useSharedValue(0);
     const bottomSheetTranslateY = useSharedValue(CLOSED_SNAP_POINT);
+
+    const panRef = React.createRef();
+    const scrollViewRef = React.createRef();
+    const  headerRef = useRef(Gesture.Pan());
 
     const onHandlerEnd = ({ velocityY }: PanGestureHandlerEventPayload) => {
         console.log(`on handler end with velocity = ${velocityY}`)
@@ -120,20 +124,28 @@ function Example() {
             // console.log(`temp value new = ${tempTop}`)
             // console.log(`e.y = ${e.y}`);
             console.log(`e.transaltey = ${e.translationY}`);
+            top.value = initialHeight.value + e.translationY
             if(e.translationY < 0) {
-                updateFlag()
+                console.log('drag up')
+                // updateFlag()
                 // 'worklet';
                 // runOnJS(() => {
                 //     setEnabled(true)
                 // })
             } else {
+                console.log('drag down')
                 // console.log(`inital height = ${initialHeight.value}`)
-                top.value = initialHeight.value + e.translationY
+                // top.value = initialHeight.value + e.translationY
             }
             // console.log(`new top value = ${top.value}`)
         })
-        .onTouchesDown((e) => {
+        .onTouchesDown((e, stateManager) => {
             console.log('touching down')
+            if(enabled) {
+                stateManager.activate
+            } else {
+                stateManager.fail
+            }
         })
         .onTouchesUp((e) => {
             console.log('touching up')
@@ -142,7 +154,12 @@ function Example() {
             console.log('ended');
             initialHeight.value = top.value
             // console.log(`inital height after endng = ${initialHeight}`)
-        });
+        })
+        .withRef(headerRef)
+    ;
+
+    headerGesture.manualActivation(true);
+
 
     const blockScrollUntilAtTheTop = Gesture.Tap()
         // .maxDeltaY(dimensions.height/2)
@@ -154,9 +171,8 @@ function Example() {
         });
 
 
-    const scrollViewGesture = Gesture.Native().requireExternalGestureToFail(
-        headerGesture
-    )
+    const scrollViewGesture = Gesture.Native()
+        // .requireExternalGestureToFail(headerGesture)
         .onStart((e) => {
             console.log(`on start of scroll`)
         })
@@ -190,16 +206,29 @@ function Example() {
     });
 
     const _onScroll = ({nativeEvent}) => {
-        if (nativeEvent.contentOffset.y <= 0 && enabled) {
-            setEnabled(false)
+        console.log('here in scroll event native')
+        if (nativeEvent.contentOffset.y <= 0 && !enabled) {
+            console.log('disable scroll')
+            setEnabled(true)
             // this.setState({enable: true });
         }
-        if (nativeEvent.contentOffset.y > 0 && !enabled) {
-            setEnabled(true)
+        if (nativeEvent.contentOffset.y > 0 && enabled) {
+            console.log('eanble scroll')
+            setEnabled(false)
             // this.setState({enable: false});
         }
     };
 
+    const _onScrollDown = (event) => {
+        console.log(`event transalation =${event.nativeEvent.translationY}`)
+        if (!enabled) return;
+        console.log('here')
+        const {translationY} = event.nativeEvent;
+        // handle PanGesture event here
+    };
+
+
+    console.log(`enabled = ${enabled}`);
     return (
         <View style={styles.container}>
             <LoremIpsum words={200} />
@@ -208,23 +237,30 @@ function Example() {
                     {/*<GestureDetector gesture={headerGesture}>*/}
                         <View style={styles.header} />
                     {/*</GestureDetector>*/}
-                    <GestureDetector
-                        gesture={Gesture.Simultaneous(headerGesture, scrollViewGesture)}>
+                    {/*<GestureDetector*/}
+                    {/*    gesture={Gesture.Simultaneous(headerGesture, scrollViewGesture)}>*/}
+
+                    <PanGestureHandler
+                        enabled={enabled}
+                        ref={panRef}
+                        onGestureEvent={_onScrollDown}
+                    >
                         <Animated.ScrollView
                             bounces={false}
+                            ref={scrollViewRef}
+                            waitFor={enabled ? panRef : scrollViewRef}
                             scrollEventThrottle={1}
-                            scrollEnabled={enabled}
+                            scrollEnabled={true}
                             overScrollMode={"never"}
                             onScroll={_onScroll}
-                            onScrollBeginDrag={(e) => {
-                                scrollOffset.value = e.nativeEvent.contentOffset.y;
-                            }}
+
                         >
                             <LoremIpsum />
                             <LoremIpsum />
                             <LoremIpsum />
                         </Animated.ScrollView>
-                    </GestureDetector>
+                    </PanGestureHandler>
+                    {/*</GestureDetector>*/}
                 </Animated.View>
             </GestureDetector>
             <View

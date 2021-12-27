@@ -10,6 +10,7 @@ class Random extends React.Component {
     };
     _onScrollDown = (event) => {
         if (!this.state.enable) return;
+        console.log('here')
         const {translationY} = event.nativeEvent;
         // handle PanGesture event here
     };
@@ -26,23 +27,23 @@ class Random extends React.Component {
     render () {
         const { enable } = this.state;
         return (
+            <PanGestureHandler
+                enabled={enable}
+                ref={this.ref}
+                activeOffsetY={5}
+                failOffsetY={-5}
+                onGestureEvent={this._onScrollDown}
+            >
             <ScrollView
                 ref={this.scrollRef}
                 waitFor={enable ? this.ref : this.scrollRef}
                 scrollEventThrottle={40}
                 onScroll={this._onScroll}
             >
-                <PanGestureHandler
-                    enabled={enable}
-                    ref={this.ref}
-                    activeOffsetY={5}
-                    failOffsetY={-5}
-                    onGestureEvent={this._onScrollDown}
-                >
                     <LoremIpsum />
                     <LoremIpsum />
-                </PanGestureHandler>
             </ScrollView>
+            </PanGestureHandler>
         );
     }
 }
