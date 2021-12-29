@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {Dimensions, StyleSheet, View, Text, LogBox} from 'react-native';
 import {
     Gesture,
     GestureDetector,
@@ -11,12 +11,10 @@ import Animated, {
     withSpring,
 } from 'react-native-reanimated';
 import {LoremIpsum} from "./common";
-// import {LoremIpsum} from "./common";
-// import { LoremIpsum } from '../../../src/common';
 
 const HEADER_HEIGTH = 50;
 const windowHeight = Dimensions.get('window').height;
-const SNAP_POINTS_FROM_TOP = [ 100, windowHeight* 0.5];
+const SNAP_POINTS_FROM_TOP = [250, windowHeight * 0.4, windowHeight * 0.8];
 
 const FULLY_OPEN_SNAP_POINT = SNAP_POINTS_FROM_TOP[0];
 const CLOSED_SNAP_POINT = SNAP_POINTS_FROM_TOP[SNAP_POINTS_FROM_TOP.length - 1];
@@ -30,7 +28,6 @@ function Example() {
     const bottomSheetTranslateY = useSharedValue(CLOSED_SNAP_POINT);
 
     const onHandlerEnd = ({ velocityY }: PanGestureHandlerEventPayload) => {
-        console.log(`on handler end with velocity = ${velocityY}`)
         const dragToss = 0.05;
         const endOffsetY =
             bottomSheetTranslateY.value + translationY.value + velocityY * dragToss;
@@ -65,14 +62,10 @@ function Example() {
     };
 
     const panGesture = Gesture.Pan()
-        .onTouchesMove((e) => {
-            console.log('pan gesture on touches move')
-        })
         .onUpdate((e) => {
             // when bottom sheet is not fully opened scroll offset should not influence
             // its position (prevents random snapping when opening bottom sheet when
             // the content is already scrolled)
-            console.log('pan gesture')
             if (snapPoint === FULLY_OPEN_SNAP_POINT) {
                 translationY.value = e.translationY - scrollOffset.value;
             } else {
@@ -83,52 +76,34 @@ function Example() {
         .withRef(panGestureRef);
 
     const blockScrollUntilAtTheTop = Gesture.Tap()
-        .maxDeltaY(snapPoint - FULLY_OPEN_SNAP_POINT)
+        .maxDeltaY(100000)
         .maxDuration(100000)
         .simultaneousWithExternalGesture(panGesture)
-        .withRef(blockScrollUntilAtTheTopRef)
-        .onTouchesMove((e) => {
-            console.log('on move gesture tap')
-        });
+        .withRef(blockScrollUntilAtTheTopRef);
 
     const headerGesture = Gesture.Pan()
         .onUpdate((e) => {
-            console.log('in header on update')
-            console.log(`transaltion y = ${translationY.value}`);
-            console.log(`e.transalation Y  = ${e.translationY}`)
             translationY.value = e.translationY;
         })
         .onEnd(onHandlerEnd);
 
-    const scrollViewGesture = Gesture.Native().requireExternalGestureToFail(
-        blockScrollUntilAtTheTop
-    )
-        .onStart((e) => {
-            console.log(`on start of scroll`)
-        })
-        .onTouchesMove((e) => {
-            console.log(`on touch move scroll view`)
-        });
-
-    useEffect(() => {
-        console.log('re rendered')
-    });
+    const scrollViewGesture = Gesture.Native();
 
     const bottomSheetAnimatedStyle = useAnimatedStyle(() => {
         const translateY = bottomSheetTranslateY.value + translationY.value;
 
         const minTranslateY = Math.max(FULLY_OPEN_SNAP_POINT, translateY);
         const clampedTranslateY = Math.min(CLOSED_SNAP_POINT, minTranslateY);
-        console.log('bs animated')
         return {
             transform: [{ translateY: clampedTranslateY }],
         };
     });
+    LogBox.ignoreAllLogs(true);
 
     return (
         <View style={styles.container}>
-            <LoremIpsum words={200} />
-            <GestureDetector gesture={blockScrollUntilAtTheTop}>
+            <LoremIpsum words={1000} />
+            {/*<GestureDetector gesture={blockScrollUntilAtTheTop}>*/}
                 <Animated.View style={[styles.bottomSheet, bottomSheetAnimatedStyle]}>
                     <GestureDetector gesture={headerGesture}>
                         <View style={styles.header} />
@@ -137,23 +112,16 @@ function Example() {
                         gesture={Gesture.Simultaneous(panGesture, scrollViewGesture)}>
                         <Animated.ScrollView
                             bounces={false}
-                            scrollEventThrottle={1}
-                            scrollEnabled={false}
-                            overScrollMode={"never"}
-                            onScrollBeginDrag={(e) => {
-                                scrollOffset.value = e.nativeEvent.contentOffset.y;
-                            }}
-                            style={{paddingBottom:100, marginBottom:100}}
-                        >
+                            >
                             <LoremIpsum />
-                            <LoremIpsum />
-                            <LoremIpsum />
+                            {/*<Text>*/}
+                            {/*    {"hehehe"}*/}
+                            {/*</Text>*/}
+                            {/*<LoremIpsum words={195}/>*/}
                         </Animated.ScrollView>
                     </GestureDetector>
                 </Animated.View>
-            </GestureDetector>
-            <View
-                style={{height:50}}/>
+            {/*</GestureDetector>*/}
         </View>
     );
 }
@@ -162,7 +130,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#eef',
-        paddingBottom: 50,
     },
     header: {
         height: HEADER_HEIGTH,
@@ -171,7 +138,6 @@ const styles = StyleSheet.create({
     bottomSheet: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: '#ff9f7A',
-        marginBottom: 150,
     },
 });
 

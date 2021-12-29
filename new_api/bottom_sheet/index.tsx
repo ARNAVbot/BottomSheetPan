@@ -2,20 +2,17 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Dimensions, StyleSheet, useWindowDimensions, View} from 'react-native';
 import {
     Gesture,
-    GestureDetector,
-    PanGestureHandlerEventPayload,
+    GestureDetector, NativeViewGestureHandler, PanGestureHandler,
+    PanGestureHandlerEventPayload, PanGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 import Animated, {
     runOnJS,
-    runOnUI,
     useAnimatedGestureHandler,
     useAnimatedStyle,
     useSharedValue,
     withSpring,
 } from 'react-native-reanimated';
 import {LoremIpsum} from "../../common";
-// import {LoremIpsum} from "./common";
-// import { LoremIpsum } from '../../../src/common';
 
 const HEADER_HEIGTH = 50;
 const windowHeight = Dimensions.get('window').height;
@@ -26,9 +23,12 @@ const CLOSED_SNAP_POINT = SNAP_POINTS_FROM_TOP[SNAP_POINTS_FROM_TOP.length - 1];
 
 function Example() {
     const panGestureRef = useRef(Gesture.Pan());
+    const headerGesture2 = useRef(Gesture.Pan());
+    const scrollViewGestureRef = useRef(Gesture.Native());
     const blockScrollUntilAtTheTopRef = useRef(Gesture.Tap());
     const [snapPoint, setSnapPoint] = useState(CLOSED_SNAP_POINT);
     const [enabled, setEnabled] = useState(true);
+    const [valM, setValM] = useState(1)
     const translationY = useSharedValue(0);
     const scrollOffset = useSharedValue(0);
     const bottomSheetTranslateY = useSharedValue(CLOSED_SNAP_POINT);
@@ -70,13 +70,11 @@ function Example() {
 
     const panGesture = Gesture.Pan()
         .onTouchesMove((e) => {
-            console.log('pan gesture on touches move')
         })
         .onUpdate((e) => {
             // when bottom sheet is not fully opened scroll offset should not influence
             // its position (prevents random snapping when opening bottom sheet when
             // the content is already scrolled)
-            console.log('pan gesture')
             if (snapPoint === FULLY_OPEN_SNAP_POINT) {
                 translationY.value = e.translationY - scrollOffset.value;
             } else {
@@ -94,59 +92,67 @@ function Example() {
     const initialHeight = useSharedValue(
         dimensions.height/2
     );
-    // let initialHeight = dimensions.height/2;
 
-    let tempTop = 0;
+    const scrollViewGesture = Gesture.Native()
+        .requireExternalGestureToFail(headerGesture2)
+        .onStart((e) => {
+        })
+        .onTouchesMove((e) => {
+        }).onTouchesDown((e, stateManager) => {
+            stateManager.fail
+        })
+        .onTouchesUp((e) => {
+            console.log('scroll view touch up')
+        })
+        .withRef(scrollViewGestureRef)
+        // .simultaneousWithExternalGesture(headerGesture2)
+    ;
 
-    // const animatedGesture = useAnimatedGestureHandler({});
+    useEffect(() => {
+        top.value = initialHeight.value
+    }, []);
 
-    const updateFlag = () => {
-        setEnabled(true)
-    }
+    useEffect(() => {
+        console.log(`re rendering ----------------`)
+    })
 
     const headerGesture = Gesture.Pan()
         .onStart((e) => {
-            // console.log(`in on start tep.value = ${top.value}`)
             // tempTop = top.value
-            // console.log(`final temp value new = ${tempTop}`)
         })
         .onUpdate((e) => {
-            console.log('in header on update')
-            // console.log(`transaltion y = ${translationY.value}`);
-            // console.log(`e.transalation Y  = ${e.translationY}`)
             // translationY.value = e.translationY;
 
-            // console.log(`old top value = ${top.value}`)
-            // console.log(`temp value new = ${tempTop}`)
-            // console.log(`e.y = ${e.y}`);
-            console.log(`e.transaltey = ${e.translationY}`);
             if(e.translationY < 0) {
-                updateFlag()
+                console.log('moving up')
+                // updateFlag()
                 // 'worklet';
                 // runOnJS(() => {
                 //     setEnabled(true)
                 // })
             } else {
-                // console.log(`inital height = ${initialHeight.value}`)
-                top.value = initialHeight.value + e.translationY
+                console.log('moving down hg')
             }
-            // console.log(`new top value = ${top.value}`)
+            top.value = initialHeight.value + e.translationY
         })
-        .onTouchesDown((e) => {
-            console.log('touching down')
+        .onTouchesDown((e, stateManager) => {
+            // stateManager.fail()
+            // stateManager.activate
         })
         .onTouchesUp((e) => {
-            console.log('touching up')
         })
         .onEnd((e) => {
-            console.log('ended');
             initialHeight.value = top.value
-            // console.log(`inital height after endng = ${initialHeight}`)
-        });
+        })
+        .simultaneousWithExternalGesture(scrollViewGestureRef)
+        // .requireExternalGestureToFail(scrollViewGesture)
+        .manualActivation(true)
+        .withRef(headerGesture2)
+    ;
 
     const blockScrollUntilAtTheTop = Gesture.Tap()
-        // .maxDeltaY(dimensions.height/2)
-        // .maxDuration(100000)
+        .maxDeltaY(dimensions.height/2)
+        .maxDuration(100000)
         .simultaneousWithExternalGesture(headerGesture)
         .withRef(blockScrollUntilAtTheTopRef)
         .onTouchesMove((e) => {
@@ -154,33 +160,12 @@ function Example() {
         });
 
 
-    const scrollViewGesture = Gesture.Native().requireExternalGestureToFail(
-        headerGesture
-    )
-        .onStart((e) => {
-            console.log(`on start of scroll`)
-        })
-        .onTouchesMove((e) => {
-        console.log(`on touch move scroll view`)
-            // console.log(`${e.changedTouches}`)
-    }).onTouchesDown((e) => {
-        console.log('scroll view touch down')
-        })
-        .onTouchesUp((e) => {
-            console.log('scroll view touch up')
-        });
-
-    useEffect(() => {
-       console.log('re rendered')
-        top.value = initialHeight.value
-    }, []);
 
     const bottomSheetAnimatedStyle = useAnimatedStyle(() => {
         // const translateY = bottomSheetTranslateY.value + translationY.value;
         //
         // const minTranslateY = Math.max(FULLY_OPEN_SNAP_POINT, translateY);
         // const clampedTranslateY = Math.min(CLOSED_SNAP_POINT, minTranslateY);
-        console.log('bs animated')
         return {
             top: top.value
         }
@@ -191,14 +176,113 @@ function Example() {
 
     const _onScroll = ({nativeEvent}) => {
         if (nativeEvent.contentOffset.y <= 0 && enabled) {
+            console.log('disable scroll')
             setEnabled(false)
-            // this.setState({enable: true });
         }
         if (nativeEvent.contentOffset.y > 0 && !enabled) {
+            console.log('enable scroll')
             setEnabled(true)
-            // this.setState({enable: false});
         }
     };
+
+    const SPRING_CONFIG = {
+        damping: 80,
+        overshootClamping: true,
+        restDisplacementThreshold: 0.1,
+        restSpeedThreshold: 0.1,
+        // stiffness: 0,
+    };
+
+
+    const GestureManual = Gesture.Manual()
+        .onTouchesDown((e, stateManager) => {
+            if (e.numberOfTouches >= 2) {
+                // console.log('activating');
+                stateManager.activate();
+            }
+            // stateManager.activate();
+        })
+        .onTouchesMove((e) => {
+        })
+        .onUpdate((e)=> {
+        });
+
+    const runWithSlide = (position: number) => {
+        'worklet';
+
+        // top.value = withSpring(position, SPRING_CONFIG);
+        top.value = position
+        initialHeight.value = top.value
+    }
+
+    const onHandlerStateChange = ({
+                                    nativeEvent,
+                                }: PanGestureHandlerStateChangeEvent) => {
+        if(enabled) {
+            return;
+        }
+        if(nativeEvent.translationY < 0) {
+            setEnabled(true)
+            // updateFlag()
+            // 'worklet';
+            // runOnJS(() => {
+            //     setEnabled(true)
+            // })
+        } else {
+            if(nativeEvent.translationY > 80) {
+                console.log('moving down')
+                top.value = withSpring(
+                    dimensions.height,
+                    SPRING_CONFIG,
+                );
+            }
+            // top.value = dimensions.height
+
+        }
+
+    };
+
+    const dismisEnalbleFlag = (value) => {
+
+        setEnabled(value)
+        setValM(2)
+    }
+
+    const gestureHandler = useAnimatedGestureHandler({
+        onStart(event, context: any) {
+            // context.startTop = top.value;
+        },
+        onActive(event, context: any) {
+            console.log(`here in new and enabled = ${enabled} and val = ${valM}`)
+            if(enabled) {
+                return;
+            }
+            if(event.translationY < 0) {
+               runOnJS(dismisEnalbleFlag)(true)
+            } else {
+                top.value = initialHeight.value + event.translationY
+                // context.startTop = top.value
+            }
+            // top.value = withSpring(
+            //     context.startTop + event.translationY,
+            //     SPRING_CONFIG,
+            // );
+        },
+        onEnd(event) {
+            initialHeight.value = top.value
+            // if (height.value != null) {
+            //     // TODO: Wrong value of height is coming here
+            //     if (
+            //         config.isHideable &&
+            //         (event.velocityY > 1000 || top.value > height.value / 2)
+            //     ) {
+            //         dismissWithSlideAnimation(DismissTriggerType.MODAL_DRAG, null);
+            //     } else {
+            //         runSpringAnimation(0);
+            //     }
+            // }
+        },
+    });
 
     return (
         <View style={styles.container}>
@@ -208,23 +292,33 @@ function Example() {
                     {/*<GestureDetector gesture={headerGesture}>*/}
                         <View style={styles.header} />
                     {/*</GestureDetector>*/}
-                    <GestureDetector
-                        gesture={Gesture.Simultaneous(headerGesture, scrollViewGesture)}>
+                    {/*<GestureDetector*/}
+                    {/*    gesture={Gesture.Simultaneous(headerGesture, scrollViewGesture)}>*/}
+                    {/*<GestureDetector gesture={GestureManual}>*/}
+                    <PanGestureHandler
+                        ref={headerGesture2}
+                        simultaneousHandlers={[scrollViewGestureRef]}
+                        onHandlerStateChange={gestureHandler}>
+                        <Animated.View >
+                            <NativeViewGestureHandler
+                                ref={scrollViewGestureRef}
+                                simultaneousHandlers={headerGesture2}>
                         <Animated.ScrollView
                             bounces={false}
                             scrollEventThrottle={1}
                             scrollEnabled={enabled}
                             overScrollMode={"never"}
                             onScroll={_onScroll}
-                            onScrollBeginDrag={(e) => {
-                                scrollOffset.value = e.nativeEvent.contentOffset.y;
-                            }}
                         >
                             <LoremIpsum />
                             <LoremIpsum />
                             <LoremIpsum />
                         </Animated.ScrollView>
-                    </GestureDetector>
+                            </NativeViewGestureHandler>
+                        </Animated.View>
+                    </PanGestureHandler>
+                    {/*</GestureDetector>*/}
+                    {/*</GestureDetector>*/}
                 </Animated.View>
             </GestureDetector>
             <View
