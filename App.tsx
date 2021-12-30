@@ -10,8 +10,6 @@ import {
     RectButton,
 } from 'react-native-gesture-handler';
 import BottomSheetNewApi from './new_api/bottom_sheet';
-import {BottomSheet} from "./showcase/bottomSheet";
-import ActualExample from "./actualBs";
 
 interface Example {
     name: string;
@@ -27,18 +25,6 @@ const EXAMPLES: ExamplesSection[] = [
         sectionTitle: 'New api',
         data: [
             { name: 'Bottom Sheet', component: BottomSheetNewApi },
-        ],
-    },
-    {
-        sectionTitle: 'Actual api',
-        data: [
-            { name: 'Bottom Shee2t', component: ActualExample },
-        ],
-    },
-    {
-        sectionTitle: 'Showcase',
-        data: [
-            { name: 'Bottom sheet', component: BottomSheet },
         ],
     },
 ];
