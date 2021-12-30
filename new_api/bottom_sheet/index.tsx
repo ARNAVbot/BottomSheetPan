@@ -39,7 +39,7 @@ function Example() {
 
     const headerGestureAnimated = useAnimatedGestureHandler({
         onStart(event, context: any) {
-            context.startingWithDown = true
+            // context.startingWithDown = true
         },
         onActive(event, context: any) {
             console.log('header')
@@ -48,10 +48,11 @@ function Example() {
             } else {
                 console.log('moving down hg')
             }
+
             top.value = initialHeight.value + event.translationY
         },
         onEnd(event, context) {
-            context.startingWithDown = false
+            // context.startingWithDown = false
             initialHeight.value = top.value
         },
     });

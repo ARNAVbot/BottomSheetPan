@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, StyleSheet, SectionList, Platform } from 'react-native';
+import {Text, View, StyleSheet, SectionList, Platform, LogBox} from 'react-native';
 import {
     createStackNavigator,
     StackScreenProps,
@@ -10,6 +10,7 @@ import {
     RectButton,
 } from 'react-native-gesture-handler';
 import BottomSheetNewApi from './new_api/bottom_sheet';
+import newBS from "./newBS";
 
 interface Example {
     name: string;
@@ -21,10 +22,16 @@ interface ExamplesSection {
 }
 
 const EXAMPLES: ExamplesSection[] = [
+    // {
+    //     sectionTitle: 'New api',
+    //     data: [
+    //         { name: 'Bottom Sheet', component: BottomSheetNewApi },
+    //     ],
+    // },
     {
-        sectionTitle: 'New api',
+        sectionTitle: 'Test api',
         data: [
-            { name: 'Bottom Sheet', component: BottomSheetNewApi },
+            { name: 'Bottom Sheet2', component: newBS },
         ],
     },
 ];
@@ -38,6 +45,8 @@ type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
+    LogBox.ignoreAllLogs(true)
+    // console.disableYellowBox = true
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <NavigationContainer>
